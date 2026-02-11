@@ -7,5 +7,6 @@
 | `part3b_optimised.py` | Part 3b 优化版随机模型 (z=continuous) | `python part3b_optimised.py` → `part3b_output.txt` |
 
 
+-优化版随机模型失败，因此报告中不需要考虑该情况，后续会删除
 - 每个模块独立运行，通过 `from shared_data import load_all` 加载共享数据
 - 每个模块同时输出到终端和对应的 `*_output.txt` 文件
