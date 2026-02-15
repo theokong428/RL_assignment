@@ -1,7 +1,7 @@
 """
-Shared data loading & preprocessing
+ Shared data loading & preprocessing
 
-Prints data summary when run standalone.
+ Prints data summary when run standalone.
 
 """
 
@@ -10,10 +10,8 @@ import numpy as np
 import os
 import zipfile
 
-# Index
+# Configuration
 NUM_SCENARIOS = 20
-TOP_K_CANDIDATES = 5   
-# Keep top-K candidates per area，only used in Q3, otherwise we can't find solution in 10mins
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(_SCRIPT_DIR, "CaseStudyDataPY")
 ZIP_PATH = os.path.join(_SCRIPT_DIR, "CaseStudyDataPY.zip")
@@ -24,7 +22,7 @@ def load_all():
     Load and preprocess all data, return as dict.
     """
 
-    # Extract
+    #  Extract
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
         with zipfile.ZipFile(ZIP_PATH, "r") as zip_ref:
@@ -65,19 +63,7 @@ def load_all():
     )
     print(f"  Loaded {len(DemandPeriodsScenarios)} scenario demand records")
 
-    #  Candidate filtering (only for)
-    # Keep top-K candidates by capacity per postal area to reduce problem
-    # size while preserving multi-warehouse capability within each area
-    selected_candidates = []
-    for area in sorted(Candidates_df["Postal Area"].unique()):
-        area_cands = Candidates_df[Candidates_df["Postal Area"] == area]
-        top = area_cands.nlargest(TOP_K_CANDIDATES, "Capacity").index.tolist()
-        selected_candidates.extend(top)
-    Candidates_df = Candidates_df.loc[selected_candidates]
-    print(f"Candidate filtering: 440 -> {len(Candidates_df)} "
-          f"(top-{TOP_K_CANDIDATES} per area)")
-
-    # Index sets
+    #  Index sets
     Customers = PostcodeDistricts.index
     Candidates = Candidates_df.index
     Suppliers = Suppliers_df.index
@@ -88,7 +74,7 @@ def load_all():
     # Vehicle data
     VehicleCostPerMileAndTonneOverall = {1: 0.185, 2: 0.720, 3: 0.857}
 
-    # Supplier-product mapping
+    #  Supplier-product mapping
     SuppliersByProduct = {
         p: list(Suppliers_df[Suppliers_df["Product group"] == p].index)
         for p in Products
@@ -169,7 +155,7 @@ def load_all():
         for j in Candidates for area in PostalAreas
     }
 
-    # Warehouse & supplier parameters
+    # Warehouse and supplier parameters
     f = {j: Candidates_df.loc[j, "Setup cost"] for j in Candidates}
     g = {j: Candidates_df.loc[j, "Operating"] for j in Candidates}
     u = {j: Candidates_df.loc[j, "Capacity"] for j in Candidates}

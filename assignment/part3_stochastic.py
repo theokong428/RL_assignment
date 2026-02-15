@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
 """
 part3_stochastic.py — Part 3: Stochastic MECWLP (Original, z=binary)
-随机MECWLP模型 — 原始版
 
-两阶段随机规划: 建设决策(场景无关) + 运营决策(场景相关)
 Two-stage stochastic programming: build decisions (scenario-independent)
 + operational decisions (per scenario).
 
-保守公式: 所有场景下约束均需成立。
 Conservative: constraints enforced for ALL scenarios.
 
-独立运行: python part3_stochastic.py
 """
 
 import xpress as xp
@@ -25,9 +20,7 @@ from shared_data import load_all
 TIME_LIMIT = -600  # 10 min
 
 
-# =============================================================================
 # Logging
-# =============================================================================
 class Tee:
     def __init__(self, filepath, original):
         self._file = open(filepath, "w", encoding="utf-8")
@@ -50,9 +43,7 @@ def log(msg=""):
     print(msg)
 
 
-# =============================================================================
 # Load data
-# =============================================================================
 D = load_all()
 
 Candidates    = D["Candidates"]
@@ -71,9 +62,7 @@ prob_s        = D["prob_s"]
 NUM_SCENARIOS = D["NUM_SCENARIOS"]
 
 
-# =============================================================================
 # Build and solve
-# =============================================================================
 log(f"Part 3: Stochastic MECWLP (Original) — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 log(f"Scenarios: {NUM_SCENARIOS}")
 log(f"\n{'='*60}")
@@ -81,15 +70,15 @@ log("Part 3: Stochastic MECWLP (z=binary)")
 log(f"{'='*60}")
 
 prob = xp.problem("Part3_Stochastic_MECWLP")
-xp.setOutputEnabled(True)
+xp.setOutputEnabled(False)
 
-# --- First-stage variables (scenario-independent) ---
+# First-stage variables 
 y = {(j, t): xp.var(vartype=xp.binary, name=f"y_{j}_{t}")
      for j in Candidates for t in Times}
 z = {(j, t): xp.var(vartype=xp.binary, name=f"z_{j}_{t}")
      for j in Candidates for t in Times}
 
-# --- Second-stage variables (per scenario) ---
+# Second-stage variables 
 x = {(j, area, p, t, sc): xp.var(lb=0, ub=1, name=f"x_{j}_{area}_{p}_{t}_{sc}")
      for j in Candidates for area in PostalAreas
      for p in Products for t in Times for sc in ScenariosSet}
@@ -102,8 +91,8 @@ prob.addVariable(*y.values(), *z.values(), *x.values(), *w.values())
 nvar = len(y) + len(z) + len(x) + len(w)
 log(f"Variables: y={len(y)}, z={len(z)}, x={len(x)}, w={len(w)}, total={nvar}")
 
-# --- Objective ---
-# Setup + operating (scenario-independent) + expected transport
+# Objective
+# Setup + operating + expected transport
 prob.setObjective(
     xp.Sum(f[j] * y[j, t] for j in Candidates for t in Times)
     + xp.Sum(g[j] * z[j, t] for j in Candidates for t in Times)
@@ -122,16 +111,16 @@ prob.setObjective(
     sense=xp.minimize,
 )
 
-# --- Constraints ---
+# Constraints
 ncon = 0
 
-# (C1) Cumulative open (scenario-independent)
+# (C1) Cumulative open
 for j in Candidates:
     for t in Times:
         prob.addConstraint(z[j, t] == xp.Sum(y[j, tau] for tau in range(1, t + 1)))
         ncon += 1
 
-# (C2) Build at most once (scenario-independent)
+# (C2) Build at most once
 for j in Candidates:
     prob.addConstraint(xp.Sum(y[j, t] for t in Times) <= 1)
     ncon += 1
@@ -177,14 +166,14 @@ for sc in ScenariosSet:
 
 log(f"Constraints: {ncon}")
 
-# --- Solve ---
+# Solve 
 prob.controls.maxtime = TIME_LIMIT
 log(f"Solving (time limit = {abs(TIME_LIMIT)}s)...")
 t0 = time.time()
 prob.solve()
 solve_time = time.time() - t0
 
-# --- Results ---
+# Results
 sol = prob.attributes.solstatus
 status_map = {
     xp.SolStatus.OPTIMAL: "OPTIMAL",
@@ -203,7 +192,7 @@ if sol in (xp.SolStatus.OPTIMAL, xp.SolStatus.FEASIBLE):
     log(f"Best bound: £{best_bound:,.2f}")
     log(f"MIP gap: {mip_gap * 100:.2f}%")
 
-    # --- Batch extract all solution values (avoid slow per-variable API calls) ---
+    # Extract all solution values
     y_keys = list(y.keys())
     y_vals = prob.getSolution(list(y[k] for k in y_keys))
     y_sol = dict(zip(y_keys, y_vals))

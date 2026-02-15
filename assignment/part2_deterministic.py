@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
 """
-part2_deterministic.py — Part 2: Multi-Period MECWLP (Deterministic)
-多时段确定性MECWLP模型
+part2_deterministic.py — Part 2: Multi-Period MECWLP
 
-包含原始版 (z=binary) 和优化版 Part 2b (z=continuous)。
 Includes original (z=binary) and optimised Part 2b (z=continuous).
 
-独立运行: python part2_deterministic.py
 """
 
 import xpress as xp
@@ -21,9 +17,7 @@ from shared_data import load_all
 TIME_LIMIT = -600  # 10 min
 
 
-# =============================================================================
 # Logging helper
-# =============================================================================
 class Tee:
     def __init__(self, filepath, original):
         self._file = open(filepath, "w", encoding="utf-8")
@@ -46,9 +40,7 @@ def log(msg=""):
     print(msg)
 
 
-# =============================================================================
 # Load data
-# =============================================================================
 D = load_all()
 
 Candidates    = D["Candidates"]
@@ -64,14 +56,11 @@ f, g, u, s = D["f"], D["g"], D["u"], D["s"]
 Candidates_df = D["Candidates_df"]
 
 
-# =============================================================================
 # Helper: build, solve, report
-# =============================================================================
 def build_and_solve(label, z_binary=True):
     """
-    构建并求解多时段MECWLP。
-    z_binary=True  → 原始版 (z as binary)
-    z_binary=False → 优化版 (z as continuous, integrality implied by z=Σy)
+    z_binary=True  → z as binary
+    z_binary=False → z as continuous, integrality implied by z=sum y
     """
     log(f"\n{'='*60}")
     log(f"{label}")
@@ -124,18 +113,18 @@ def build_and_solve(label, z_binary=True):
     # --- Constraints ---
     ncon = 0
 
-    # (C1) Cumulative open: z_{j,t} = Σ_{τ≤t} y_{j,τ}
+    # (C1) Cumulative open:
     for j in Candidates:
         for t in Times:
             prob.addConstraint(z[j, t] == xp.Sum(y[j, tau] for tau in range(1, t + 1)))
             ncon += 1
 
-    # (C2) Build at most once: Σ_t y_{j,t} ≤ 1
+    # (C2) Build at most once
     for j in Candidates:
         prob.addConstraint(xp.Sum(y[j, t] for t in Times) <= 1)
         ncon += 1
 
-    # (C3) Demand satisfaction: Σ_j x_{j,i,p,t} = 1
+    # (C3) Demand satisfaction
     for area in PostalAreas:
         for p in Products:
             for t in Times:
@@ -257,9 +246,7 @@ def build_and_solve(label, z_binary=True):
     return obj_val, solve_time
 
 
-# =============================================================================
 # Main
-# =============================================================================
 if __name__ == "__main__":
     log(f"Part 2: Multi-Period MECWLP — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
